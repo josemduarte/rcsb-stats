@@ -25,7 +25,7 @@ public class CheckPdbxUnobs {
 
     public static void main(String[] args) throws IOException {
         CheckPdbxUnobs me = new CheckPdbxUnobs();
-        //me.countHeavyAtoms(me.fetchStructureData("1A07"));
+        me.countHeavyAtoms(me.fetchStructureData("3ZE8"));
         new CheckPdbxUnobs().computeStats();
     }
 
@@ -86,7 +86,9 @@ public class CheckPdbxUnobs {
         EntityPolySeq entityPoly = block.getEntityPolySeq();
         for (int rowIndex = 0; rowIndex < entityPoly.getRowCount(); rowIndex++) {
             String entId = entityPoly.getEntityId().get(rowIndex);
-            entityIdToLength.merge(entId, 1, Integer::sum);
+            // this essentially achieves getting the last value of an entity. A bit heavy to put for every row but an easier implementation ;)
+            // the alternative of counting all rows doesn't work because of microhetereogeneity (e.g. 3ZE8)
+            entityIdToLength.put(entId, entityPoly.getNum().get(rowIndex));
         }
 
         AtomSite atomSite = block.getAtomSite();
