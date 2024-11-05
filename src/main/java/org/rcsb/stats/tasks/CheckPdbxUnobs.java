@@ -80,11 +80,10 @@ public class CheckPdbxUnobs {
 
         String entryId = block.getStruct().getEntryId().values().findFirst().orElse("");
 
-        EntityPoly entityPoly = block.getEntityPoly();
+        EntityPolySeq entityPoly = block.getEntityPolySeq();
         for (int rowIndex = 0; rowIndex < entityPoly.getRowCount(); rowIndex++) {
             String entId = entityPoly.getEntityId().get(rowIndex);
-            int seqLength = entityPoly.getPdbxSeqOneLetterCodeCan().get(rowIndex).replaceAll("\n","").length();
-            entityIdToLength.put(entId, seqLength);
+            entityIdToLength.merge(entId, 1, Integer::sum);
         }
 
         AtomSite atomSite = block.getAtomSite();
