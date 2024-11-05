@@ -25,7 +25,7 @@ public class CheckPdbxUnobs {
 
     public static void main(String[] args) throws IOException {
         CheckPdbxUnobs me = new CheckPdbxUnobs();
-        me.countHeavyAtoms(me.fetchStructureData("1A05"));
+        me.countHeavyAtoms(me.fetchStructureData("6PFR"));
         new CheckPdbxUnobs().computeStats();
     }
 
@@ -89,13 +89,31 @@ public class CheckPdbxUnobs {
 
         AtomSite atomSite = block.getAtomSite();
         Map<String, TreeSet<Integer>> asymIdToResNums = new HashMap<>();
+        double totalResOcc = 0.0;
+        int prevSeqId = -1;
+        String prevAsymId = null;
         for (int rowIndex = 0; rowIndex < atomSite.getRowCount(); rowIndex++) {
             String entId = atomSite.getLabelEntityId().get(rowIndex);
             String asymId = atomSite.getLabelAsymId().get(rowIndex);
             asymIdsToEntId.putIfAbsent(asymId, entId);
             if (!entityIdToLength.containsKey(entId)) continue; // not a polymer
             int seqId = atomSite.getLabelSeqId().get(rowIndex);
-            asymIdToResNums.computeIfAbsent(asymId, k -> new TreeSet<>()).add(seqId);
+            double occ = atomSite.getOccupancy().get(rowIndex);
+
+            if (prevSeqId>0 && seqId!=prevSeqId && totalResOcc > 0.00001) {
+                asymIdToResNums.computeIfAbsent(prevAsymId, k -> new TreeSet<>()).add(prevSeqId);
+            }
+
+            if (prevSeqId>0 && seqId!=prevSeqId) {
+                totalResOcc = 0.0;
+            }
+            totalResOcc += occ;
+
+            prevSeqId = seqId;
+            prevAsymId = asymId;
+        }
+        if (totalResOcc > 0.00001) {
+            asymIdToResNums.computeIfAbsent(prevAsymId, k -> new TreeSet<>()).add(prevSeqId);
         }
 
         Map<String, List<String>> entIdToAsymIds = new HashMap<>();
