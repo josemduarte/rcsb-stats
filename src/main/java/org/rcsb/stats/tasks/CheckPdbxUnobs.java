@@ -25,7 +25,7 @@ public class CheckPdbxUnobs {
 
     public static void main(String[] args) throws IOException {
         CheckPdbxUnobs me = new CheckPdbxUnobs();
-        me.countHeavyAtoms(me.fetchStructureData("6PFR"));
+        me.countHeavyAtoms(me.fetchStructureData("1IBA"));
         new CheckPdbxUnobs().computeStats();
     }
 
@@ -80,6 +80,9 @@ public class CheckPdbxUnobs {
 
         String entryId = block.getStruct().getEntryId().values().findFirst().orElse("");
 
+        PdbxNmrEnsemble ensemble = block.getPdbxNmrEnsemble();
+        int numModels = ensemble.getConformersSubmittedTotalNumber().values().findAny().orElse(1);
+
         EntityPolySeq entityPoly = block.getEntityPolySeq();
         for (int rowIndex = 0; rowIndex < entityPoly.getRowCount(); rowIndex++) {
             String entId = entityPoly.getEntityId().get(rowIndex);
@@ -122,6 +125,10 @@ public class CheckPdbxUnobs {
         for (String entId : entityIdToLength.keySet()) {
             for (String asymId : entIdToAsymIds.get(entId)) {
                 TreeSet<Integer> allResNums = asymIdToResNums.get(asymId);
+                if (allResNums == null) {
+                    logger.info("No residue numbers info present for entry {}, asym {}", entryId, asymId);
+                    continue;
+                }
                 for (int i = 1; i <= entityIdToLength.get(entId); i++) {
                     if (!allResNums.contains(i)) {
                         asymIdToUnmodeledCount.merge(asymId, 1, Integer::sum);
@@ -139,7 +146,7 @@ public class CheckPdbxUnobs {
 
         for (String entId : entityIdToLength.keySet()) {
             for (String asymId : entIdToAsymIds.get(entId)) {
-                int unmodeledCount = Optional.ofNullable(asymIdToUnmodeledCount.get(asymId)).orElse(0);
+                int unmodeledCount = Optional.ofNullable(asymIdToUnmodeledCount.get(asymId)).orElse(0) * numModels;
                 int unobsCount = Optional.ofNullable(asymIdToPdbUnobsCount.get(asymId)).orElse(0);
                 if (unmodeledCount != unobsCount) {
                     logger.info("Different count for entry {}, asym {}, unmodeled {}, unobs {}", entryId, asymId, unmodeledCount, unobsCount);
