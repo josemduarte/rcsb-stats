@@ -25,7 +25,7 @@ public class CheckPdbxUnobs {
 
     public static void main(String[] args) throws IOException {
         CheckPdbxUnobs me = new CheckPdbxUnobs();
-        me.countHeavyAtoms(me.fetchStructureData("1IBA"));
+        //me.countHeavyAtoms(me.fetchStructureData("1A07"));
         new CheckPdbxUnobs().computeStats();
     }
 
@@ -102,7 +102,7 @@ public class CheckPdbxUnobs {
             int seqId = atomSite.getLabelSeqId().get(rowIndex);
             double occ = atomSite.getOccupancy().get(rowIndex);
 
-            if (prevSeqId>0 && seqId!=prevSeqId && totalResOcc > 0.00001) {
+            if (prevSeqId>0 && (seqId!=prevSeqId || !asymId.equals(prevAsymId)) && totalResOcc > 0.00001) {
                 asymIdToResNums.computeIfAbsent(prevAsymId, k -> new TreeSet<>()).add(prevSeqId);
             }
 
