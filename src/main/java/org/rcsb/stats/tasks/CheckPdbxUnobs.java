@@ -25,7 +25,7 @@ public class CheckPdbxUnobs {
 
     public static void main(String[] args) throws IOException {
         CheckPdbxUnobs me = new CheckPdbxUnobs();
-        me.countHeavyAtoms(me.fetchStructureData("3ZE8"));
+        me.countHeavyAtoms(me.fetchStructureData("5MG3"));
         new CheckPdbxUnobs().computeStats();
     }
 
@@ -93,6 +93,8 @@ public class CheckPdbxUnobs {
 
         AtomSite atomSite = block.getAtomSite();
         Map<String, TreeSet<Integer>> asymIdToResNums = new HashMap<>();
+        // init to empty sets: if it happens that the loop through atom site doesn't find anything for an entity, then this will reflect it (e.g. 5MG3)
+        entityIdToLength.keySet().forEach(asym -> asymIdToResNums.put(asym, new TreeSet<>()));
         double totalResOcc = 0.0;
         int prevSeqId = -1;
         String prevAsymId = null;
@@ -105,7 +107,7 @@ public class CheckPdbxUnobs {
             double occ = atomSite.getOccupancy().get(rowIndex);
 
             if (prevSeqId>0 && (seqId!=prevSeqId || !asymId.equals(prevAsymId)) && totalResOcc > 0.00001) {
-                asymIdToResNums.computeIfAbsent(prevAsymId, k -> new TreeSet<>()).add(prevSeqId);
+                asymIdToResNums.get(prevAsymId).add(prevSeqId);
             }
 
             if (prevSeqId>0 && seqId!=prevSeqId) {
@@ -117,22 +119,17 @@ public class CheckPdbxUnobs {
             prevAsymId = asymId;
         }
         if (totalResOcc > 0.00001) {
-            asymIdToResNums.computeIfAbsent(prevAsymId, k -> new TreeSet<>()).add(prevSeqId);
+            asymIdToResNums.get(prevAsymId).add(prevSeqId);
         }
 
         Map<String, List<String>> entIdToAsymIds = new HashMap<>();
-        asymIdsToEntId.entrySet().stream().forEach(e -> entIdToAsymIds.computeIfAbsent(e.getValue(), k -> new ArrayList<>()).add(e.getKey()));
+        asymIdsToEntId.forEach((key, value) -> entIdToAsymIds.computeIfAbsent(value, k -> new ArrayList<>()).add(key));
 
         Map<String, Integer> asymIdToUnmodeledCount = new HashMap<>();
         for (String entId : entityIdToLength.keySet()) {
             for (String asymId : entIdToAsymIds.get(entId)) {
-                TreeSet<Integer> allResNums = asymIdToResNums.get(asymId);
-                if (allResNums == null) {
-                    logger.info("No residue numbers info present for entry {}, asym {}", entryId, asymId);
-                    continue;
-                }
                 for (int i = 1; i <= entityIdToLength.get(entId); i++) {
-                    if (!allResNums.contains(i)) {
+                    if (!asymIdToResNums.get(asymId).contains(i)) {
                         asymIdToUnmodeledCount.merge(asymId, 1, Integer::sum);
                     }
                 }
@@ -155,21 +152,6 @@ public class CheckPdbxUnobs {
                 }
             }
         }
-
-//        long countUnobsRes = block.getPdbxUnobsOrZeroOccResidues()
-//                .getLabelSeqId()
-//                .values().count();
-//
-//        if (countUnobsRes > 0) {
-//            logger.info("Entry {}. Unobserved residues from pdbx_unobs_or_zero_occ_residues: {}", block.getStruct().getEntryId().values().findFirst().orElse(""), countUnobsRes);
-//        }
-
-//        long countUnobsAtom = block.getPdbxUnobsOrZeroOccAtoms()
-//                .getLabelSeqId()
-//                .values().count();
-//        if (countUnobsAtom > 0) {
-//            logger.info("Entry {}. Unobserved atoms from pdbx_unobs_or_zero_occ_atom: {}", block.getStruct().getEntryId().values().findFirst().orElse(""), countUnobsAtom);
-//        }
 
         return 0;
     }
