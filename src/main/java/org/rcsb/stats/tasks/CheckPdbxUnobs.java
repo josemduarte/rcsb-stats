@@ -148,7 +148,9 @@ public class CheckPdbxUnobs {
                 int unmodeledCount = Optional.ofNullable(asymIdToUnmodeledCount.get(asymId)).orElse(0) * numModels;
                 int unobsCount = Optional.ofNullable(asymIdToPdbUnobsCount.get(asymId)).orElse(0);
                 if (unmodeledCount != unobsCount) {
-                    logger.info("Different count for entry {}, asym {}, unmodeled {}, unobs {}", entryId, asymId, unmodeledCount, unobsCount);
+                    String multiModMsg = "";
+                    if (numModels>1) multiModMsg = "Note entry has " + multiModMsg + " models.";
+                    logger.info("Different count for entry {}, asym {}, unmodeled {}, unobs {}. {}", entryId, asymId, unmodeledCount, unobsCount, multiModMsg);
                 }
             }
         }
