@@ -93,8 +93,6 @@ public class CheckPdbxUnobs {
 
         AtomSite atomSite = block.getAtomSite();
         Map<String, TreeSet<Integer>> asymIdToResNums = new HashMap<>();
-        // init to empty sets: if it happens that the loop through atom site doesn't find anything for an entity, then this will reflect it (e.g. 5MG3)
-        entityIdToLength.keySet().forEach(asym -> asymIdToResNums.put(asym, new TreeSet<>()));
         double totalResOcc = 0.0;
         int prevSeqId = -1;
         String prevAsymId = null;
@@ -103,6 +101,8 @@ public class CheckPdbxUnobs {
             String asymId = atomSite.getLabelAsymId().get(rowIndex);
             asymIdsToEntId.putIfAbsent(asymId, entId);
             if (!entityIdToLength.containsKey(entId)) continue; // not a polymer
+            // init to empty sets: if it happens that the loop through atom site doesn't find anything for an entity, then this will reflect it (e.g. 5MG3)
+            asymIdToResNums.putIfAbsent(asymId, new TreeSet<>());
             int seqId = atomSite.getLabelSeqId().get(rowIndex);
             double occ = atomSite.getOccupancy().get(rowIndex);
 
