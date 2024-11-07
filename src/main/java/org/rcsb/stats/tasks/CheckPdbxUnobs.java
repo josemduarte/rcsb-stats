@@ -152,7 +152,7 @@ public class CheckPdbxUnobs {
                 int unobsCount = Optional.ofNullable(asymIdToPdbUnobsCount.get(asymId)).orElse(0);
                 if (unmodeledCount != unobsCount) {
                     String multiModMsg = "";
-                    if (numModels>1) multiModMsg = "Note entry has " + multiModMsg + " models. ";
+                    if (numModels>1) multiModMsg = "Note entry has " + numModels + " models. ";
                     if (!isDiffraction) multiModMsg += "Not a diffraction entry.";
                     logger.info("Different count for entry {}, asym {}, unmodeled {}, unobs {}. {}", entryId, asymId, unmodeledCount, unobsCount, multiModMsg);
                 }
