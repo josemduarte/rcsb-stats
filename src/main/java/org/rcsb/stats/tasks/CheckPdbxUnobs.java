@@ -79,6 +79,7 @@ public class CheckPdbxUnobs {
                 .getFirstBlock();
 
         String entryId = block.getStruct().getEntryId().values().findFirst().orElse("");
+        boolean isDiffraction = block.getExptl().getMethod().values().anyMatch(m -> m.equals("X-RAY DIFFRACTION") || m.equals("NEUTRON DIFFRACTION"));
 
         PdbxNmrEnsemble ensemble = block.getPdbxNmrEnsemble();
         int numModels = ensemble.getConformersSubmittedTotalNumber().values().findAny().orElse(1);
@@ -96,6 +97,8 @@ public class CheckPdbxUnobs {
         double totalResOcc = 0.0;
         int prevSeqId = -1;
         String prevAsymId = null;
+        double minOcc = -1.0; // this equates to ignoring occupancy for non-diffraction methods
+        if (isDiffraction) minOcc = 0.00001;
         for (int rowIndex = 0; rowIndex < atomSite.getRowCount(); rowIndex++) {
             String entId = atomSite.getLabelEntityId().get(rowIndex);
             String asymId = atomSite.getLabelAsymId().get(rowIndex);
@@ -106,7 +109,7 @@ public class CheckPdbxUnobs {
             int seqId = atomSite.getLabelSeqId().get(rowIndex);
             double occ = atomSite.getOccupancy().get(rowIndex);
 
-            if (prevSeqId>0 && (seqId!=prevSeqId || !asymId.equals(prevAsymId)) && totalResOcc > 0.00001) {
+            if (prevSeqId>0 && (seqId!=prevSeqId || !asymId.equals(prevAsymId)) && totalResOcc > minOcc) {
                 asymIdToResNums.get(prevAsymId).add(prevSeqId);
             }
 
@@ -118,7 +121,7 @@ public class CheckPdbxUnobs {
             prevSeqId = seqId;
             prevAsymId = asymId;
         }
-        if (totalResOcc > 0.00001) {
+        if (totalResOcc > minOcc) {
             asymIdToResNums.get(prevAsymId).add(prevSeqId);
         }
 
@@ -149,7 +152,8 @@ public class CheckPdbxUnobs {
                 int unobsCount = Optional.ofNullable(asymIdToPdbUnobsCount.get(asymId)).orElse(0);
                 if (unmodeledCount != unobsCount) {
                     String multiModMsg = "";
-                    if (numModels>1) multiModMsg = "Note entry has " + multiModMsg + " models.";
+                    if (numModels>1) multiModMsg = "Note entry has " + multiModMsg + " models. ";
+                    if (!isDiffraction) multiModMsg += "Not a diffraction entry.";
                     logger.info("Different count for entry {}, asym {}, unmodeled {}, unobs {}. {}", entryId, asymId, unmodeledCount, unobsCount, multiModMsg);
                 }
             }
